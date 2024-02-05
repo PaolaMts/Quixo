@@ -3,8 +3,6 @@ from tqdm.auto import tqdm
 import numpy as np
 from players import RandomPlayer, get_moves, len_moves, empty_moves
 
-N_EXPANSIONS =  1_000
-INIT_TRAIN = 10_000
 
 def minimax(state, player_id, move, alfa, beta, max_depth, isMaximizing, winner):
     if winner != -1: # terminal node
@@ -28,11 +26,11 @@ def minimax(state, player_id, move, alfa, beta, max_depth, isMaximizing, winner)
                 break
     return v
 
-def initialize_tree(mc_tree: Tree, node_list: list[Node]):
+def initialize_tree(mc_tree: Tree, node_list: list[Node], init_train=2_500):
     print("INITIALIZE THE TREE")
     n_wins = 0
     n_losses = 0
-    for _ in tqdm(range(INIT_TRAIN)):
+    for _ in tqdm(range(init_train)):
         g = TrainGame(np.ones((5, 5), dtype=np.uint8) * -1, 1)
         # g.print()
         player1 = RandomPlayer(0)
@@ -65,11 +63,11 @@ def initialize_tree(mc_tree: Tree, node_list: list[Node]):
         empty_moves()
         l = len_moves()
 
-def expand_tree(mc_tree: Tree, node_list: list[Node]):
-    nodes_to_expand = sorted(filter(lambda e: not e.terminal, node_list), key=lambda e: (e.depth), reverse=False)
+def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 1_000):
+    nodes_to_expand = sorted(filter(lambda e: not e.terminal and len(e.children)!=44, node_list), key=lambda e: (e.depth), reverse=False)
     print(f"Nodes to expand: {len(nodes_to_expand)}")
     
-    expansions = len(nodes_to_expand) if N_EXPANSIONS >= len(nodes_to_expand) else N_EXPANSIONS
+    expansions = len(nodes_to_expand) if n_expansions >= len(nodes_to_expand) else n_expansions
     print(f"# of nodes = {len(node_list)}")
     
     print("\nEXPANSION")

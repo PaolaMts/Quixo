@@ -21,6 +21,10 @@ class Node():
     def append_child(self, child:'Node'):  #add a child to the node
         self.children.append(child)
 
+    def is_complete(self):
+        return len(self.children) == len(get_all_valid_moves(self.state, self.depth % 2))
+
+
     def find_child(self, move):
         for c in self.children:
             if move == c.move:

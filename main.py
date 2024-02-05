@@ -7,6 +7,7 @@ import pickle
 import os
 
 TEST_MATCHES = 100
+MODE = "train"
       
 
 if __name__ == '__main__':
@@ -21,12 +22,13 @@ if __name__ == '__main__':
             mc_tree.head, node_list = deserialize_tree(loaded_tree, node_list=node_list)           
     else:     
         initialize_tree(mc_tree, node_list)
+        
+    if MODE == "train":
+        len_node_before_expansion = len(node_list) 
+        expand_tree(mc_tree, node_list)
+        len_node_after_expansion = len(node_list)
 
-    len_node_before_expansion = len(node_list) 
-    expand_tree(mc_tree, node_list)
-    len_node_after_expansion = len(node_list)
 
-    if len_node_before_expansion != len_node_after_expansion:
         serialized_tree= serialize_node(mc_tree.head) 
         with open('albero.pkl', 'wb') as file:
             pickle.dump(serialized_tree, file)
