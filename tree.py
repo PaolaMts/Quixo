@@ -5,7 +5,7 @@ from colorama import Fore
 
 class Node():
     
-    def __init__(self, move, state, parent:'Node'=None, terminal=False) -> None:
+    def __init__(self, move, state, parent:'Node'=None, terminal=False, is_new=True) -> None:
         self.parent = parent  # TO CLIMB THE TREE UPWARD
         self.children: list['Node'] = [] 
         self.move = move  #THE MOVE ASSIGNED TO THE NODE
@@ -14,16 +14,19 @@ class Node():
         self.depth = parent.depth + 1 if parent is not None else 0
         self.terminal = terminal
         self.state = state #state of the board on that move 
+        self.is_complete = False
+        
 
         if parent is not None:  # include the new node in the children list of the parent
-            parent.append_child(self)
-
-    def append_child(self, child:'Node'):  #add a child to the node
+            parent.append_child(self, is_new=is_new)
+        
+    def append_child(self, child:'Node', is_new=True):  #add a child to the node
         self.children.append(child)
-
-    def is_complete(self):
-        return len(self.children) == len(get_all_valid_moves(self.state, self.depth % 2))
-
+        if is_new:
+            self.is_complete = len(self.children) == len(get_all_valid_moves(self.state, self.depth % 2)) 
+    
+    def UCT(self):
+        return self.wins / (self.wins + self.losses) + np.sqrt(2 * np.log(self.parent.wins + self.parent.losses) / (self.wins + self.losses))
 
     def find_child(self, move):
         for c in self.children:

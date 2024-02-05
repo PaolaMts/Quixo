@@ -26,7 +26,7 @@ def minimax(state, player_id, move, alfa, beta, max_depth, isMaximizing, winner)
                 break
     return v
 
-def initialize_tree(mc_tree: Tree, node_list: list[Node], init_train=2_500):
+def initialize_tree(mc_tree: Tree, node_list: list[Node], init_train=1_000):
     print("INITIALIZE THE TREE")
     n_wins = 0
     n_losses = 0
@@ -64,7 +64,7 @@ def initialize_tree(mc_tree: Tree, node_list: list[Node], init_train=2_500):
         l = len_moves()
 
 def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 1_000):
-    nodes_to_expand = sorted(filter(lambda e: not e.terminal and len(e.children)!=44, node_list), key=lambda e: (e.depth), reverse=False)
+    nodes_to_expand = sorted(filter(lambda e: not e.terminal and not e.is_complete  , node_list), key=lambda e: (e.UCT()), reverse=True)
     print(f"Nodes to expand: {len(nodes_to_expand)}")
     
     expansions = len(nodes_to_expand) if n_expansions >= len(nodes_to_expand) else n_expansions
@@ -120,6 +120,7 @@ def serialize_node(node:Node):
         'losses': node.losses,
         'depth': node.depth,
         'terminal': node.terminal,
+        'is_complete': node.is_complete,
         'children': [serialize_node(child) for child in node.children]
     }
     return serialized_node
@@ -128,11 +129,12 @@ def deserialize_tree(serialized_node, parent=None, node_list=None):
     move = serialized_node.get('move')
     state = serialized_node.get('state')
     terminal = serialized_node.get('terminal')
-    node = Node(move, state, parent, terminal)
+    node = Node(move, state, parent, terminal, False)
 
     wins = serialized_node.get('wins', 0)
     losses = serialized_node.get('losses', 0)
     depth = serialized_node.get('depth', 0)
+    node.is_complete = serialized_node.get('is_complete', False)
     node.wins = wins
     node.losses = losses
     node.depth = depth
