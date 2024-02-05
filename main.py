@@ -4,6 +4,7 @@ import numpy as np
 from tqdm.auto import tqdm
 from colorama import Fore
 from copy import deepcopy
+import pickle
 
 MOVES = []
 INIT_TRAIN = 1_000
@@ -21,8 +22,7 @@ class Node():
         self.losses = 0
         self.depth = parent.depth + 1 if parent is not None else 0
         self.terminal = terminal
-        self.state = state #state of the board on that move
-        self.score = None # only used if you resort to minimax 
+        self.state = state #state of the board on that move 
 
         if parent is not None:  # include the new node in the children list of the parent
             parent.append_child(self)
@@ -76,6 +76,36 @@ class TrainGame(Game):
     def move(self, from_pos: tuple[int, int], slide: Move, player_id: int) -> bool:
         return self._Game__move(from_pos, slide, player_id)
 
+def serialize_node(node:Node):
+    serialized_node = {
+        'move': node.move,
+        'state': node.state,
+        'wins': node.wins,
+        'losses': node.losses,
+        'depth': node.depth,
+        'terminal': node.terminal,
+        'children': [serialize_node(child) for child in node.children]
+    }
+    return serialized_node
+
+def deserialize_tree(serialized_node, parent=None):
+    move = serialized_node.get('move')
+    state = serialized_node.get('state')
+    terminal = serialized_node.get('terminal')
+    node = Node(move, state, parent, terminal)
+
+    wins = serialized_node.get('wins', 0)
+    losses = serialized_node.get('losses', 0)
+    depth = serialized_node.get('depth', 0)
+    node.wins = wins
+    node.losses = losses
+    node.depth = depth
+
+    children_data = serialized_node.get('children', [])
+    for child_data in children_data:
+        deserialize_tree(child_data, parent=node)
+
+    return node
 
 class RandomPlayer(Player):
     
@@ -173,18 +203,18 @@ class MyPlayer(Player):
                     f_node = child
             
             # RANDOM
-            # from_pos = (random.randint(0, 4), random.randint(0, 4))
-            # move = random.choice([Move.TOP, Move.BOTTOM, Move.LEFT, Move.RIGHT])
+            from_pos = (random.randint(0, 4), random.randint(0, 4))
+            move = random.choice([Move.TOP, Move.BOTTOM, Move.LEFT, Move.RIGHT])
 
             # MINIMAX
-            valid_moves = get_all_valid_moves(game.get_board(), self.player_id)
-            scores_list = []
-            for vm in valid_moves:
-                score = minimax(vm[1], self.player_id, (self.player_id + 1) % 2, -float('inf'), float('inf'), 5, True, vm[2])
-                scores_list.append((vm[0], score))
-            chosen_move = max(scores_list, key=lambda e: e[1])
-            from_pos = chosen_move[0][0]
-            move = chosen_move[0][1]
+            # valid_moves = get_all_valid_moves(game.get_board(), self.player_id)
+            # scores_list = []
+            # for vm in valid_moves:
+            #     score = minimax(vm[1], self.player_id, (self.player_id + 1) % 2, -float('inf'), float('inf'), 3, True, vm[2])
+            #     scores_list.append((vm[0], score))
+            # chosen_move = max(scores_list, key=lambda e: e[1])
+            # from_pos = chosen_move[0][0]
+            # move = chosen_move[0][1]
 
             if len(MOVES) % 2 == self.player_id: # if it's your turn than add a new element to the list
                 MOVES.append((from_pos, move))
@@ -238,105 +268,116 @@ def minimax(state, player_id, move, alfa, beta, max_depth, isMaximizing, winner)
 if __name__ == '__main__':
     # mc_tree, node_list = initialize_tree()
     cont_terminal = 0 
-
+    loaded_tree = None
     mc_tree = Tree()
-    node_list:list[Node] = []
+    with open('albero.pkl', 'rb') as file:
+        loaded_tree = pickle.load(file)
+
+    if loaded_tree is not None:
+        tree = Tree()
+        mc_tree.head = deserialize_tree(loaded_tree)
+ 
+    # node_list:list[Node] = []
 
     n_wins = 0
     n_losses = 0
 
     print("INITIALIZE THE TREE")
 
-    for _ in tqdm(range(INIT_TRAIN)):
-        g = TrainGame(np.ones((5, 5), dtype=np.uint8) * -1, 1)
-        # g.print()
-        player1 = RandomPlayer(0)
-        player2 = RandomPlayer(1)
-        winner = g.play(player1, player2)
+    # for _ in tqdm(range(INIT_TRAIN)):
+    #     g = TrainGame(np.ones((5, 5), dtype=np.uint8) * -1, 1)
+    #     # g.print()
+    #     player1 = RandomPlayer(0)
+    #     player2 = RandomPlayer(1)
+    #     winner = g.play(player1, player2)
 
-        if winner == 0:
-            n_wins += 1
-        else:
-            n_losses += 1
-        mc_tree.set_depth(len(MOVES))
+    #     if winner == 0:
+    #         n_wins += 1
+    #     else:
+    #         n_losses += 1
+    #     mc_tree.set_depth(len(MOVES))
 
-        parent = mc_tree.head
-        for i in range(len(MOVES)):
-            child = parent.find_child(MOVES[i][0])
-            if child is None:
-                child = Node(MOVES[i][0], MOVES[i][1], parent=parent, terminal=True if i == len(MOVES) - 1 else False)
-                node_list.append(child)
-                if child.terminal:
-                    cont_terminal += 1
-            if winner == 0:
-                if child.depth % 2 == 0:
-                    child.wins += 1
-                else:
-                    child.losses += 1
-            else:
-                if child.depth % 2 == 0:
-                    child.losses += 1
-                else:
-                    child.wins += 1
-            parent = child
-        MOVES = []
+    #     parent = mc_tree.head
+    #     for i in range(len(MOVES)):
+    #         child = parent.find_child(MOVES[i][0])
+    #         if child is None:
+    #             child = Node(MOVES[i][0], MOVES[i][1], parent=parent, terminal=True if i == len(MOVES) - 1 else False)
+    #             node_list.append(child)
+    #             if child.terminal:
+    #                 cont_terminal += 1
+    #         if winner == 0:
+    #             if child.depth % 2 == 0:
+    #                 child.wins += 1
+    #             else:
+    #                 child.losses += 1
+    #         else:
+    #             if child.depth % 2 == 0:
+    #                 child.losses += 1
+    #             else:
+    #                 child.wins += 1
+    #         parent = child
+    #     MOVES = []
 
 
-    nodes_to_expand = sorted(filter(lambda e: not e.terminal, node_list), key=lambda e: (e.depth), reverse=False)
-    print(f"Nodes to expand: {len(nodes_to_expand)}")
-    num_expansion = 0 # How many nodes I have expanded already
+    # nodes_to_expand = sorted(filter(lambda e: not e.terminal, node_list), key=lambda e: (e.depth), reverse=False)
+    # print(f"Nodes to expand: {len(nodes_to_expand)}")
+    # num_expansion = 0 # How many nodes I have expanded already
     
-    expansions = len(nodes_to_expand) if N_EXPANSIONS >= len(nodes_to_expand) else N_EXPANSIONS
+    # expansions = len(nodes_to_expand) if N_EXPANSIONS >= len(nodes_to_expand) else N_EXPANSIONS
 
-    print(f"# of nodes = {len(node_list)}")
+    # print(f"# of nodes = {len(node_list)}")
     
-    print("\nEXPANSION")
-    for j in tqdm(range(expansions)):
-        node = nodes_to_expand[j]
-        for _ in range(10):
-            MOVES = []
-            g = TrainGame(node.state, (node.depth + 1) % 2)
-            player1 = RandomPlayer(0)
-            player2 = RandomPlayer(1)
-            winner = g.play(player1, player2)
-            mc_tree.set_depth(node.depth + len(MOVES))
-            ancestors = get_ancestors(node)
-            for a in ancestors:
-                if a.depth % 2 == 0: #moves of player 1
-                    if winner == 1:
-                        a.wins += 1
-                    else:
-                        a.losses += 1
-                else: #moves of player 0
-                    if winner == 1:
-                        a.losses += 1
-                    else:
-                        a.wins += 1
-            parent = node
-            for i in range(len(MOVES)):
-                child = parent.find_child(MOVES[i][0])
-                if child is None:
-                    child = Node(MOVES[i][0], MOVES[i][1], parent=parent, terminal=True if i == len(MOVES) - 1 else False)
-                    node_list.append(child)
-                    if child.terminal:
-                        cont_terminal += 1
-                if winner == 0:
-                    if child.depth % 2 == 0:
-                        child.wins += 1
-                    else:
-                        child.losses += 1
-                else:
-                    if child.depth % 2 == 0:
-                        child.losses += 1
-                    else:
-                        child.wins += 1
-                parent = child
-            MOVES = []   
+    # print("\nEXPANSION")
+    # for j in tqdm(range(expansions)):
+    #     node = nodes_to_expand[j]
+    #     for _ in range(10):
+    #         MOVES = []
+    #         g = TrainGame(node.state, (node.depth + 1) % 2)
+    #         player1 = RandomPlayer(0)
+    #         player2 = RandomPlayer(1)
+    #         winner = g.play(player1, player2)
+    #         mc_tree.set_depth(node.depth + len(MOVES))
+    #         ancestors = get_ancestors(node)
+    #         for a in ancestors:
+    #             if a.depth % 2 == 0: #moves of player 1
+    #                 if winner == 1:
+    #                     a.wins += 1
+    #                 else:
+    #                     a.losses += 1
+    #             else: #moves of player 0
+    #                 if winner == 1:
+    #                     a.losses += 1
+    #                 else:
+    #                     a.wins += 1
+    #         parent = node
+    #         for i in range(len(MOVES)):
+    #             child = parent.find_child(MOVES[i][0])
+    #             if child is None:
+    #                 child = Node(MOVES[i][0], MOVES[i][1], parent=parent, terminal=True if i == len(MOVES) - 1 else False)
+    #                 node_list.append(child)
+    #                 if child.terminal:
+    #                     cont_terminal += 1
+    #             if winner == 0:
+    #                 if child.depth % 2 == 0:
+    #                     child.wins += 1
+    #                 else:
+    #                     child.losses += 1
+    #             else:
+    #                 if child.depth % 2 == 0:
+    #                     child.losses += 1
+    #                 else:
+    #                     child.wins += 1
+    #             parent = child
+    #         MOVES = []  
+
+    # serialized_tree= serialize_node(mc_tree.head) 
+    # with open('albero.pkl', 'wb') as file:
+    #     pickle.dump(serialized_tree, file)
         
     wins = 0
     losses = 0
 
-    print(f"# of nodes = {len(node_list)}")
+    # print(f"# of nodes = {len(node_list)}")
 
     print("\nTEST GAMES")
 
