@@ -6,7 +6,7 @@ from tqdm.auto import tqdm
 import pickle
 import os
 
-TEST_MATCHES = 500
+TEST_MATCHES = 50
 MODE = "test"
       
 

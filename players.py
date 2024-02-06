@@ -73,7 +73,6 @@ class MyPlayer(Player):
                 next_state = self.current_state.find_child(best_move.state)
                 if next_state == None:
                     self.not_found = True
-                    self.switch_turn = len(MOVES) + 1
                 else:
                     self.current_state = next_state
                     MOVES.append((best_move.move, best_move.state))
@@ -81,6 +80,7 @@ class MyPlayer(Player):
             else:
                 self.current_state, best_move= simm_move(self.current_state, game.get_board()) # find the opponent last move in the tree
                 if best_move is not None:
+                    MOVES.append((best_move, self.current_state))
                     return best_move
                 else:
                     # print("Opponent move not found")

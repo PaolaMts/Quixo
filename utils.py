@@ -64,7 +64,7 @@ def initialize_tree(mc_tree: Tree, node_list: list[Node], init_train=1_000):
         empty_moves()
         l = len_moves()
 
-def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 2_000):
+def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 100):
     nodes_to_expand = sorted(filter(lambda e: not e.terminal and not e.is_complete  , node_list), key=lambda e: (e.UCT()), reverse=True)
     print(f"Nodes to expand: {len(nodes_to_expand)}")
     

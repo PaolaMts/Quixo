@@ -27,7 +27,7 @@ class Node():
         #     self.is_complete = len(self.children) == len(get_all_valid_moves(self.state, self.depth % 2)) 
     
     def UCT(self):
-        return self.wins / (self.wins + self.losses) + (np.sqrt(2 * np.log(self.parent.wins + self.parent.losses) / (self.wins + self.losses)) if self.parent is not None else 0)
+        return self.wins / (self.wins + self.losses) + (np.sqrt(2 * np.log(self.parent.wins + self.parent.losses) / (self.wins + self.losses)) if self.parent is not None and self.parent.depth >= 1 else 0)
 
     def find_child(self, state, ):
         free_cells_state = np.count_nonzero(state == -1)
