@@ -45,9 +45,10 @@ def initialize_tree(mc_tree: Tree, node_list: list[Node], init_train=1_000):
         l= len_moves()
         parent = mc_tree.head
         for i in range(len_moves()):
-            child = parent.find_child(get_moves()[i][0])
+            child = parent.find_child(get_moves()[i][1])
             if child is None:
                 child = Node(get_moves()[i][0], get_moves()[i][1], parent=parent, terminal=True if i == len_moves() - 1 else False)
+                mc_tree.update_idx()
                 node_list.append(child)
             if winner == 0:
                 if child.depth % 2 == 0:
@@ -63,7 +64,7 @@ def initialize_tree(mc_tree: Tree, node_list: list[Node], init_train=1_000):
         empty_moves()
         l = len_moves()
 
-def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 1_000):
+def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 2_000):
     nodes_to_expand = sorted(filter(lambda e: not e.terminal and not e.is_complete  , node_list), key=lambda e: (e.UCT()), reverse=True)
     print(f"Nodes to expand: {len(nodes_to_expand)}")
     
@@ -121,7 +122,8 @@ def serialize_node(node:Node):
         'depth': node.depth,
         'terminal': node.terminal,
         'is_complete': node.is_complete,
-        'children': [serialize_node(child) for child in node.children]
+        'children': [serialize_node(child) for child in node.children],
+        'free_cells' : node.free_cells,
     }
     return serialized_node
 
@@ -129,7 +131,7 @@ def deserialize_tree(serialized_node, parent=None, node_list=None):
     move = serialized_node.get('move')
     state = serialized_node.get('state')
     terminal = serialized_node.get('terminal')
-    node = Node(move, state, parent, terminal, False)
+    node = Node(move, state, parent, terminal, False, )
 
     wins = serialized_node.get('wins', 0)
     losses = serialized_node.get('losses', 0)

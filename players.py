@@ -1,6 +1,6 @@
 from copy import deepcopy
 import random
-from tree import Node, Tree, TrainGame, get_all_valid_moves
+from tree import Node, Tree, TrainGame, get_all_valid_moves, simm_move
 from game import Player, Move, Game
 
 global MOVES
@@ -68,28 +68,20 @@ class MyPlayer(Player):
     def make_move(self, game: 'Game') -> tuple[tuple[int, int], Move]:
         if not self.not_found:
             if len(MOVES) == 0: #First move of the game
-                best_move = max(self.current_state.children, key=lambda e: e.wins / (e.wins + e.losses))
+                best_move = max(self.current_state.children, key=lambda e: e.UCT())
                 from_pos, move = best_move.move[0], best_move.move[1]
-                next_state = self.current_state.find_child(best_move.move)
+                next_state = self.current_state.find_child(best_move.state)
                 if next_state == None:
                     self.not_found = True
                     self.switch_turn = len(MOVES) + 1
                 else:
                     self.current_state = next_state
-                    MOVES.append(best_move.move)
+                    MOVES.append((best_move.move, best_move.state))
             # LOOK FOR THE NODE IN THE TREE USING THE MOVES LIST
             else:
-                opponent_move = self.current_state.find_child(MOVES[-1]) # find the opponent last move in the tree
-                if opponent_move is not None:
-                    best_move = max(opponent_move.children, key=lambda e: e.wins / (e.wins + e.losses), default=None)
-                    if best_move is not None:
-                        from_pos, move = best_move.move[0], best_move.move[1]
-                        self.current_state = best_move
-                        MOVES.append(best_move.move)
-                    else:
-                        # print("Best move not found")
-                        self.not_found = True
-                        self.switch_cause = "Best move not found"
+                self.current_state, best_move= simm_move(self.current_state, game.get_board()) # find the opponent last move in the tree
+                if best_move is not None:
+                    return best_move
                 else:
                     # print("Opponent move not found")
                     self.not_found = True
@@ -101,16 +93,7 @@ class MyPlayer(Player):
                 self.switch_turn = len(MOVES) + 1
                 # print(MOVES)
                 # now try to print the entire steps until now
-                f_node = self.tree.head
-                for m in MOVES:
-                    # print(f"list of moves:{MOVES}")
-                    child = f_node.find_child(m)
-                    # child.print() if child is not None else print("None")
-                    # if child is None:
-                    #     # print("LIST OF CHILDREN:")
-                    #     for c in f_node.children:
-                    #         print(c.move)
-                    f_node = child
+    
             
             # RANDOM
             from_pos = (random.randint(0, 4), random.randint(0, 4))
