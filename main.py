@@ -1,12 +1,13 @@
 from game import Game
-from tree import Node, Tree
+from tree import Node, Tree, TrainGame
 from players import MyPlayer, RandomPlayer, empty_moves
 from utils import serialize_node, deserialize_tree, initialize_tree, expand_tree
 from tqdm.auto import tqdm
+import numpy as np
 import pickle
 import os
 
-TEST_MATCHES = 50
+TEST_MATCHES = 1
 MODE = "test"
       
 
@@ -43,7 +44,7 @@ if __name__ == '__main__':
     switch_turns = []
         
     for _ in tqdm(range(TEST_MATCHES)):
-        g = Game()
+        g = TrainGame(np.ones((5, 5), dtype=np.uint8) * -1, 1)
         player1 = MyPlayer(mc_tree, 0)
         player2 = RandomPlayer(1)
         winner = g.play(player1, player2)
@@ -52,6 +53,7 @@ if __name__ == '__main__':
             wins +=1
         else:
             losses += 1
+        g.print()
         empty_moves()
     print(f"wins: {wins}, losses: {losses}")
 
