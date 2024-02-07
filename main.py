@@ -7,7 +7,7 @@ import numpy as np
 import pickle
 import os
 
-TEST_MATCHES = 1
+TEST_MATCHES = 100
 MODE = "train"
       
 
@@ -15,27 +15,27 @@ if __name__ == '__main__':
     # mc_tree, node_list = initialize_tree()
     cont_terminal = 0 
 
-    mc_tree = Tree(5)
+    mc_tree = Tree(10)
     node_list:list[Node] = []
     if os.path.exists('albero.pkl'):
         with open('albero.pkl', 'rb') as file:
             loaded_tree = pickle.load(file)
-            mc_tree.head, node_list = deserialize_tree(loaded_tree)
+            mc_tree.head, node_list = deserialize_tree(loaded_tree,0,node_list=node_list)
             mc_tree.depth = max(node_list, key=lambda e: e.depth).depth          
     else:     
-        initialize_tree(mc_tree, node_list,250)
+        initialize_tree(mc_tree, node_list,2500)
 
     print(f"Max Node: {max(node_list, key=lambda e: e.depth).depth }")
-    print(f"non_complete_nodes: {len(list(filter(lambda e: e.depth==2 and not e.is_complete, node_list)))}")  
-    print(f"depht 2 : {len(list(filter(lambda e: e.depth==2, node_list)))}")    
+    print(f"non_complete_nodes: {len(list(filter(lambda e: e.depth==3 and not e.is_complete, node_list)))}")  
+    print(f"depht 3: {len(list(filter(lambda e: e.depth==3, node_list)))}")    
     
     if MODE == "train":
         len_node_before_expansion = len(node_list) 
-        # expand_tree(mc_tree, node_list)
+        expand_tree(mc_tree, node_list,50)
         len_node_after_expansion = len(node_list)
         print(f"nodes after expansion: {len_node_after_expansion}")
 
-        serialized_tree= serialize_node(mc_tree.head) 
+        serialized_tree= serialize_node(mc_tree.head,0) 
         with open('albero.pkl', 'wb') as file:
             pickle.dump(serialized_tree, file)
 
