@@ -5,7 +5,7 @@ from colorama import Fore
 
 
 class Node():
-    def __init__(self, move, state, parent:'Node'=None, terminal=False, is_new=True) -> None:
+    def __init__(self, move, state, parent:'Node'=None, terminal=-1, is_new=True) -> None:
         self.parent = parent  # TO CLIMB THE TREE UPWARD
         self.children: list['Node'] = [] 
         self.move = move  #THE MOVE ASSIGNED TO THE NODE
@@ -15,6 +15,7 @@ class Node():
         self.terminal = terminal
         self.state = state #state of the board on that move 
         self.free_cells = np.count_nonzero(self.state == -1)
+        self.one_cells = np.count_nonzero(self.state == 1)
         self.is_complete = False
         
 
@@ -48,8 +49,9 @@ class Node():
 
     def find_child(self, state):
         free_cells_state = np.count_nonzero(state == -1)
+        one_cells_state = np.count_nonzero(state == 1)
         for c in self.children:
-            k = check_simmetries(state, c, free_cells_state, True)
+            k = check_simmetries(state, c, free_cells_state, one_cells_state, True)
             if k is not None:
                 return c
         return None # if no child has the assigned move
@@ -118,15 +120,16 @@ def get_all_valid_moves(state, player_id):
 
 def simm_move(node, state):
     free_cells_state = np.count_nonzero(state == -1)
+    one_cells_state = np.count_nonzero(state == 1)
     for c in node.children:
-        move = check_simmetries(state, c, free_cells_state, False)
+        move = check_simmetries(state, c, free_cells_state, one_cells_state, False)
         if move is not None:
             return move
     return None, None
 
-def check_simmetries(checked_state, node, free_cells_state, flag_simmetries=False):  #move => ((i, j), slide)
+def check_simmetries(checked_state, node, free_cells_state,one_cells_state, flag_simmetries=False):  #move => ((i, j), slide)
 
-    if free_cells_state != node.free_cells:
+    if free_cells_state != node.free_cells or one_cells_state != node.one_cells or node.state[2][2] != checked_state[2][2]:
         return None
     
     for k in range(1, 5): # k = 4 means 4 rotations so it's like not rotating it
@@ -137,7 +140,11 @@ def check_simmetries(checked_state, node, free_cells_state, flag_simmetries=Fals
             if np.array_equal(int_state, checked_state): # you found the simmetry, now the fun starts
                 if flag_simmetries:
                     return True
-                my_node = max(node.children, key= lambda e: e.UCT())
+                best_node = list(filter(lambda e: e.terminal==((e.depth+1)%2), node.children))
+                if len(best_node)!=0:
+                    my_node = best_node[0]
+                else:
+                    my_node = max(node.children, key= lambda e: e.UCT())
                 (i, j) = my_node.move[0]
                 slide = my_node.move[1]
                 simm = {

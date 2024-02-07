@@ -2,6 +2,7 @@ from tree import Tree, Node, TrainGame, get_all_valid_moves, get_ancestors
 from tqdm.auto import tqdm
 import numpy as np
 from players import RandomPlayer, get_moves, len_moves, empty_moves
+from copy import deepcopy
 
 
 def minimax(state, player_id, move, alfa, beta, max_depth, isMaximizing, winner):
@@ -49,7 +50,7 @@ def initialize_tree(mc_tree: Tree, node_list: list[Node], init_train=1_000):
                 break 
             child = parent.find_child(get_moves()[i][1])
             if child is None:
-                child = Node(get_moves()[i][0], get_moves()[i][1], parent=parent, terminal=True if i == len_moves() - 1 else False)
+                child = Node(get_moves()[i][0], get_moves()[i][1], parent=parent, terminal=winner if i == len_moves() - 1 else -1)
                 node_list.append(child)
             if winner == 0:
                 if child.depth % 2 == 0:
@@ -66,7 +67,8 @@ def initialize_tree(mc_tree: Tree, node_list: list[Node], init_train=1_000):
         l = len_moves()
 
 def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 100):
-    nodes_to_expand = sorted(filter(lambda e: not e.terminal and not e.is_complete and e.depth < mc_tree.max_depth, node_list), key=lambda e: (e.depth, e.UCT()), reverse=True)
+    nodes_to_expand = sorted(filter(lambda e:  e.terminal==-1 and not e.is_complete and e.depth < mc_tree.max_depth, node_list), key=lambda e: (e.depth, -e.UCT()), reverse=False)
+    print(f"min_depth to expand: {nodes_to_expand[0].depth}")
     print(f"Nodes to expand: {len(nodes_to_expand)}")
     
     expansions = len(nodes_to_expand) if n_expansions >= len(nodes_to_expand) else n_expansions
@@ -75,7 +77,7 @@ def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 100):
     print("\nEXPANSION")
     for j in tqdm(range(expansions)):
         node = nodes_to_expand[j]
-        for _ in range(10):
+        for _ in range(100):
             empty_moves()
             g = TrainGame(node.state, (node.depth + 1) % 2)
             player1 = RandomPlayer(0)
@@ -100,7 +102,7 @@ def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 100):
                     break
                 child = parent.find_child(get_moves()[i][0])
                 if child is None:
-                    child = Node(get_moves()[i][0], get_moves()[i][1], parent=parent, terminal=True if i == len_moves() - 1 else False)
+                    child = Node(get_moves()[i][0], get_moves()[i][1], parent=parent, terminal=winner if i == len_moves() - 1 else -1)
                     node_list.append(child)
                 if winner == 0:
                     if child.depth % 2 == 0:
@@ -122,34 +124,93 @@ def serialize_node(node:Node):
         'state': node.state,
         'wins': node.wins,
         'losses': node.losses,
-        'depth': node.depth,
         'terminal': node.terminal,
         'is_complete': node.is_complete,
-        'children': [serialize_node(child) for child in node.children],
-        'free_cells' : node.free_cells,
+        'children': [serialize_node(child) for child in node.children if child.depth==node.depth+1],
     }
     return serialized_node
 
-def deserialize_tree(serialized_node, parent=None, node_list=None):
-    move = serialized_node.get('move')
-    state = serialized_node.get('state')
-    terminal = serialized_node.get('terminal')
-    node = Node(move, state, parent, terminal, False, )
+# def serialize_node(node: Node):
+#     stack = [node]
+#     serialized_tree = []
 
-    wins = serialized_node.get('wins', 0)
-    losses = serialized_node.get('losses', 0)
-    depth = serialized_node.get('depth', 0)
-    node.is_complete = serialized_node.get('is_complete', False)
-    node.wins = wins
-    node.losses = losses
-    node.depth = depth
+#     while stack:
+#         current_node = stack.pop()
+#         serialized_node = {
+#             'move': current_node.move,
+#             'state': current_node.state,
+#             'wins': current_node.wins,
+#             'losses': current_node.losses,
+#             'terminal': current_node.terminal,
+#             'is_complete': current_node.is_complete,
+#             'children': [],
+#         }
 
-    if node_list is not None:
+#         # Aggiungiamo i figli solo se il nodo corrente ha figli e lo stiamo processando per la prima volta
+#         if current_node.children and not serialized_node['children']:
+#             for child in reversed(current_node.children):
+#                 stack.append(child)
+
+#         # Aggiungiamo il nodo corrente alla lista dei nodi serializzati
+#         serialized_tree.append(serialized_node)
+
+#     # Restituiamo la testa dell'albero serializzata
+#     return serialized_tree[0] if serialized_tree else None
+
+
+
+def deserialize_tree(serialized_node):
+    # Creiamo una pila per gestire i nodi da visitare
+    stack = [(None, serialized_node)]
+    node_list = []
+
+    while stack:
+        parent, serialized_node = stack.pop()
+        move = serialized_node.get('move')
+        state = serialized_node.get('state')
+        terminal = serialized_node.get('terminal')
+        node = Node(move, state, parent, terminal, False)
+
+
+        wins = serialized_node.get('wins', 0)
+        losses = serialized_node.get('losses', 0)
+        node.is_complete = serialized_node.get('is_complete', False)
+        node.wins = wins
+        node.losses = losses
+
         node_list.append(node)
 
-    children_data = serialized_node.get('children', [])
-    for child_data in children_data:
-        deserialize_tree(child_data, parent=node, node_list=node_list)
+        children_data = serialized_node.get('children', [])
+        for child_data in children_data:
+            stack.append((node, child_data))
 
-    return node, node_list
+    # Restituiamo sia il nodo principale che la lista dei nodi deserializzati
+    return node_list[0], node_list
+
+
+
+
+
+# def deserialize_tree(serialized_node, parent=None, node_list=None):
+#     move = serialized_node.get('move')
+#     state = serialized_node.get('state')
+#     terminal = serialized_node.get('terminal')
+#     node = Node(move, state, parent, terminal, False, )
+
+#     wins = serialized_node.get('wins', 0)
+#     losses = serialized_node.get('losses', 0)
+#     depth = serialized_node.get('depth', 0)
+#     node.is_complete = serialized_node.get('is_complete', False)
+#     node.wins = wins
+#     node.losses = losses
+#     node.depth = depth
+
+#     if node_list is not None:
+#         node_list.append(node)
+
+#     children_data = serialized_node.get('children', [])
+#     for child_data in children_data:
+#         deserialize_tree(child_data, parent=node, node_list=node_list)
+
+#     return node, node_list
 
