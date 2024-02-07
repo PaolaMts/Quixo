@@ -45,10 +45,11 @@ def initialize_tree(mc_tree: Tree, node_list: list[Node], init_train=1_000):
         l= len_moves()
         parent = mc_tree.head
         for i in range(len_moves()):
+            if i >= mc_tree.max_depth:
+                break 
             child = parent.find_child(get_moves()[i][1])
             if child is None:
                 child = Node(get_moves()[i][0], get_moves()[i][1], parent=parent, terminal=True if i == len_moves() - 1 else False)
-                mc_tree.update_idx()
                 node_list.append(child)
             if winner == 0:
                 if child.depth % 2 == 0:
@@ -65,7 +66,7 @@ def initialize_tree(mc_tree: Tree, node_list: list[Node], init_train=1_000):
         l = len_moves()
 
 def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 100):
-    nodes_to_expand = sorted(filter(lambda e: not e.terminal and not e.is_complete  , node_list), key=lambda e: (e.UCT()), reverse=True)
+    nodes_to_expand = sorted(filter(lambda e: not e.terminal and not e.is_complete and e.depth < mc_tree.max_depth, node_list), key=lambda e: (e.depth, e.UCT()), reverse=True)
     print(f"Nodes to expand: {len(nodes_to_expand)}")
     
     expansions = len(nodes_to_expand) if n_expansions >= len(nodes_to_expand) else n_expansions
@@ -95,6 +96,8 @@ def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 100):
                         a.wins += 1
             parent = node
             for i in range(len_moves()):
+                if node.depth + i >= mc_tree.max_depth:
+                    break
                 child = parent.find_child(get_moves()[i][0])
                 if child is None:
                     child = Node(get_moves()[i][0], get_moves()[i][1], parent=parent, terminal=True if i == len_moves() - 1 else False)

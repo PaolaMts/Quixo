@@ -8,21 +8,24 @@ import pickle
 import os
 
 TEST_MATCHES = 1
-MODE = "test"
+MODE = "train"
       
 
 if __name__ == '__main__':
     # mc_tree, node_list = initialize_tree()
     cont_terminal = 0 
 
-    mc_tree = Tree()
+    mc_tree = Tree(10)
     node_list:list[Node] = []
     if os.path.exists('albero.pkl'):
         with open('albero.pkl', 'rb') as file:
             loaded_tree = pickle.load(file)
-            mc_tree.head, node_list = deserialize_tree(loaded_tree, node_list=node_list)           
+            mc_tree.head, node_list = deserialize_tree(loaded_tree, node_list=node_list)
+            mc_tree.depth = max(node_list, key=lambda e: e.depth).depth          
     else:     
         initialize_tree(mc_tree, node_list)
+
+    print(f"Max Node: {max(node_list, key=lambda e: e.depth).depth }")
         
     if MODE == "train":
         len_node_before_expansion = len(node_list) 
@@ -33,6 +36,8 @@ if __name__ == '__main__':
         serialized_tree= serialize_node(mc_tree.head) 
         with open('albero.pkl', 'wb') as file:
             pickle.dump(serialized_tree, file)
+
+    print(f"Depth: {mc_tree.depth}")
         
     wins = 0
     losses = 0
@@ -45,6 +50,7 @@ if __name__ == '__main__':
         
     for _ in tqdm(range(TEST_MATCHES)):
         g = TrainGame(np.ones((5, 5), dtype=np.uint8) * -1, 1)
+        g = Game()
         player1 = MyPlayer(mc_tree, 0)
         player2 = RandomPlayer(1)
         winner = g.play(player1, player2)

@@ -22,14 +22,31 @@ class Node():
             parent.append_child(self, is_new=is_new)
         
     def append_child(self, child:'Node', is_new=True):  #add a child to the node
-        self.children.append(child)
+        # self.children.append(child)
         # if is_new:
+        #     if not self.is_complete:
+        #         all_moves = get_all_valid_moves(self.state, self.depth % 2)
+        #         for m in all_moves:
+        #             if self.find_child(m[1]) is not None:
+        #                 break
+
+        self.children.append(child)
+        if is_new:
+            if not self.is_complete:
+                    # check the compliteness of the node
+                    all_moves = get_all_valid_moves(self.state, self.depth % 2)
+                    for m in all_moves:
+                        if self.find_child(m[1]) is None:
+                            return
+                    self.is_complete = True
+            
+
         #     self.is_complete = len(self.children) == len(get_all_valid_moves(self.state, self.depth % 2)) 
     
     def UCT(self):
         return self.wins / (self.wins + self.losses) + (np.sqrt(2 * np.log(self.parent.wins + self.parent.losses) / (self.wins + self.losses)) if self.parent is not None and self.parent.depth >= 1 else 0)
 
-    def find_child(self, state, ):
+    def find_child(self, state):
         free_cells_state = np.count_nonzero(state == -1)
         for c in self.children:
             k = check_simmetries(state, c, free_cells_state, True)
@@ -42,21 +59,19 @@ class Node():
 
 
 class Tree():
-    def __init__(self) -> None:
+    def __init__(self, max_depth) -> None:
         self.head = Node(None, np.ones((5, 5), dtype=np.uint8) * -1) # Tree head has no move associated to it
         # initialize all the valid starting moves for the tree
         # vm = get_all_valid_first_moves()
         # for valid_move in vm:
         #     Node(valid_move, self.head)
         self.depth = 0
-        self.next_idx = 1
+        self.max_depth = max_depth
     
     def set_depth(self, depth):
-        if depth > self.depth:
-            self.depth = depth
-    
-    def update_idx(self):
-        self.next_idx+=1
+        new_d = depth if depth <= self.max_depth else self.max_depth
+        if new_d > self.depth:
+            self.depth = new_d
 
     def print(self):
         print(f"Number of sons:{len(self.head.children)}")

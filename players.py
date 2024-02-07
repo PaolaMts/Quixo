@@ -66,10 +66,6 @@ class MyPlayer(Player):
         self.switch_turn = None
         self.switch_cause = None
     
-    
-
-        
-
     def make_move(self, game: 'Game') -> tuple[tuple[int, int], Move]:
         if not self.not_found:
 
@@ -94,13 +90,13 @@ class MyPlayer(Player):
                     self.switch_cause = "Opponent move not found"
         # IF YOU DON'T FIND THE NODE, PLAY RANDOMLY
         if self.not_found:
-            if self.switch_turn is not None:
-                self.current_state, move= search_new_node(self.tree.head, game.get_board(), np.count_nonzero(game.get_board()== -1))
-                if move is not None:
-                    print("YEEEEE, TROVATA")
-                    MOVES.append((move, self.current_state))
-                    self.not_found = False
-                    return move
+            # if self.switch_turn is not None:
+            #     self.current_state, move= search_new_node(self.tree.head, game.get_board(), np.count_nonzero(game.get_board()== -1))
+            #     if move is not None:
+            #         print("YEEEEE, TROVATA")
+            #         MOVES.append((move, self.current_state))
+            #         self.not_found = False
+            #         return move
             if self.switch_turn is None:
             #     print(f"Switch strategy at turn {len(MOVES) + 1}")
                 self.switch_turn = len(MOVES) + 1
@@ -109,7 +105,7 @@ class MyPlayer(Player):
     
             
             # RANDOM
-            print("RANDOM")
+            # print("RANDOM")
             from_pos = (random.randint(0, 4), random.randint(0, 4))
             move = random.choice([Move.TOP, Move.BOTTOM, Move.LEFT, Move.RIGHT])
             self.not_found = True
