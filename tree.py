@@ -144,7 +144,11 @@ def check_simmetries(checked_state, node, free_cells_state,one_cells_state, flag
                 if len(best_node)!=0:
                     my_node = best_node[0]
                 else:
-                    my_node = max(node.children, key= lambda e: e.UCT())
+                    if len(node.children) == 0:
+                        print(f"\nNo more children, depth: {node.depth}")
+                    my_node = max(node.children, key= lambda e: e.UCT(), default=None)
+                if my_node is None:
+                    return None
                 (i, j) = my_node.move[0]
                 slide = my_node.move[1]
                 simm = {

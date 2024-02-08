@@ -67,8 +67,8 @@ def initialize_tree(mc_tree: Tree, node_list: list[Node], init_train=1_000):
         l = len_moves()
 
 def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 100):
-    nodes_to_expand = sorted(filter(lambda e:  e.terminal==-1 and not e.is_complete and e.depth < mc_tree.max_depth, node_list), key=lambda e: (e.depth, -e.UCT()), reverse=False)
-    print(f"min_depth to expand: {nodes_to_expand[0].depth}")
+    nodes_to_expand = sorted(filter(lambda e: e.terminal==-1 and not e.is_complete and e.depth < mc_tree.max_depth, node_list), key=lambda e: (e.UCT(), -e.depth), reverse=True)
+    print(f"min_depth to expand: {min(nodes_to_expand, key=lambda e: e.depth).depth}")
     print(f"Nodes to expand: {len(nodes_to_expand)}")
     
     expansions = len(nodes_to_expand) if n_expansions >= len(nodes_to_expand) else n_expansions
@@ -77,7 +77,7 @@ def expand_tree(mc_tree: Tree, node_list: list[Node], n_expansions = 100):
     print("\nEXPANSION")
     for j in tqdm(range(expansions)):
         node = nodes_to_expand[j]
-        for _ in range(100):
+        for _ in range(200):
             empty_moves()
             g = TrainGame(deepcopy(node.state), (node.depth + 1) % 2)
             player1 = RandomPlayer(0)

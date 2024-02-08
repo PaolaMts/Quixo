@@ -7,8 +7,8 @@ import numpy as np
 import pickle
 import os
 
-TEST_MATCHES = 100
-MODE = "train"
+TEST_MATCHES = 1000
+MODE = "test"
       
 
 if __name__ == '__main__':
@@ -18,6 +18,7 @@ if __name__ == '__main__':
     mc_tree = Tree(10)
     node_list:list[Node] = []
     if os.path.exists('albero.pkl'):
+        print("Loading trained agent...")
         with open('albero.pkl', 'rb') as file:
             loaded_tree = pickle.load(file)
             mc_tree.head, node_list = deserialize_tree(loaded_tree,0,node_list=node_list)
@@ -26,15 +27,16 @@ if __name__ == '__main__':
         initialize_tree(mc_tree, node_list,2500)
 
     print(f"Max Node: {max(node_list, key=lambda e: e.depth).depth }")
-    print(f"non_complete_nodes: {len(list(filter(lambda e: e.depth==3 and not e.is_complete, node_list)))}")  
-    print(f"depht 3: {len(list(filter(lambda e: e.depth==3, node_list)))}")    
+    print(f"non_complete_nodes: {len(list(filter(lambda e: e.depth==4 and not e.is_complete, node_list)))}")  
+    print(f"depht 4: {len(list(filter(lambda e: e.depth==4, node_list)))}")    
     
     if MODE == "train":
         len_node_before_expansion = len(node_list) 
-        expand_tree(mc_tree, node_list,50)
+        expand_tree(mc_tree, node_list,200)
         len_node_after_expansion = len(node_list)
         print(f"nodes after expansion: {len_node_after_expansion}")
 
+        print("Saving trained agent...")
         serialized_tree= serialize_node(mc_tree.head,0) 
         with open('albero.pkl', 'wb') as file:
             pickle.dump(serialized_tree, file)
@@ -65,5 +67,6 @@ if __name__ == '__main__':
         empty_moves()
     print(f"wins: {wins}, losses: {losses}")
 
-    print(max(switch_turns, key=lambda e: e[1])[0])
+    print(f"max turn switch: {max(switch_turns, key=lambda e: e[1])[0]}")
+    print(f"min turn switch: {min(switch_turns, key=lambda e: e[1])[0]}")
     
