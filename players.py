@@ -52,17 +52,26 @@ def check_simmetries(list_states, new_state, free_cells_new_state, one_cells_new
     return False
 
 def print_board(game:Game):
-        for row in game.get_board():
-            for cell in row:
-                if cell == -1:
-                    print('\033[90m', "-", '\033[0m', end=' ')  # Grey color for -1
-                elif cell == 0:
-                    print('\033[91m', "X", '\033[0m', end=' ')  # Red color for 0
-                elif cell == 1:
-                    print('\033[92m', "O", '\033[0m', end=' ')  # Green color for 1
-                else:
-                    print(cell, end=' ')
-            print()
+    print()
+    print("    ", end="")
+    for i in range(5):
+        print('\033[0m', f"{i} ", '\033[0m',end='')
+    print()
+    print("   ", end="")
+    print('\033[0m', "__________________", '\033[0m', end='')
+    print()
+    for i  in range(5):
+        print(i," |", end="")
+        for cell in game.get_board()[i]:
+            if cell == -1:
+                print('\033[90m', "-", '\033[0m', end=' ')  # Grey color for -1
+            elif cell == 0:
+                print('\033[91m', "X", '\033[0m', end=' ')  # Red color for 0
+            elif cell == 1:
+                print('\033[92m', "O", '\033[0m', end=' ')  # Green color for 1
+            else:
+                print(cell, end=' ')
+        print()
 
 class HumanPlayer(Player):
     def __init__(self) -> None:
@@ -73,7 +82,7 @@ class HumanPlayer(Player):
         print()
         while True:
             from_pos = input("Enter the position of the piece you want to move (x,y): ").split(',')
-            if from_pos[0]=="ESCAPE" or from_pos[0]=="escape":
+            if from_pos[0]=="ESCAPE" or from_pos[0]=="escape" or from_pos[0]=="\033":
                 exit()
             if not from_pos[0].isdigit() or not from_pos[1].isdigit():
                 print("Insert numbers, try again")
@@ -163,7 +172,6 @@ class MyPlayer(Player):
         winner = game.check_winner()
         if winner == game.get_current_player():
             return 1
-        elif winner != -1:
+        if winner != -1:
             return -1
-        else:
-            return 0
+        return 0
