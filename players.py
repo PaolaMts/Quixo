@@ -17,6 +17,81 @@ def empty_moves():
     global MOVES
     MOVES = []
 
+def get_all_valid_moves(state, player_id):
+    valid_moves = []
+    for i in range(5):
+        for j in range(5):
+            for m in [Move.BOTTOM, Move.LEFT, Move.RIGHT, Move.TOP]:
+                game = TrainGame(deepcopy(state))
+                ok = game.move((i, j), m, player_id)
+                if ok:
+                    valid_moves.append((((i, j), m), game.get_board(), game.check_winner()))
+    return valid_moves
+
+
+def check_simmetries(checked_state, node, free_cells_state,one_cells_state, flag_simmetries=False):  #move => ((i, j), slide)
+
+    if free_cells_state != node.free_cells or one_cells_state != node.one_cells or node.state[2][2] != checked_state[2][2]:
+        return None
+    
+    for k in range(1, 5): # k = 4 means 4 rotations so it's like not rotating it
+        for flip in [1, -1]:  # 1 => not flipped, -1 => flipped
+            key = k * flip  
+            int_state = np.flip(node.state, axis=1) if key<0 else node.state# axis=1 is to flip horizontally
+            int_state = np.rot90(int_state, k=abs(k)%4, axes=(1, 0))
+            if np.array_equal(int_state, checked_state): # you found the simmetry, now the fun starts
+                if flag_simmetries:
+                    return True
+                best_node = list(filter(lambda e: e.terminal==((e.depth+1)%2), node.children))
+                if len(best_node)!=0:
+                    my_node = best_node[0]
+                else:
+                    if len(node.children) == 0:
+                        print(f"\nNo more children, depth: {node.depth}")
+                    my_node = max(node.children, key= lambda e: e.UCT(), default=None)
+                if my_node is None:
+                    return None
+                (i, j) = my_node.move[0]
+                slide = my_node.move[1]
+                simm = {
+                    4: ([Move.TOP, Move.RIGHT, Move.BOTTOM, Move.LEFT], (i, j)),
+                    1: ([Move.RIGHT, Move.BOTTOM, Move.LEFT, Move.TOP], (4 - j, i)),
+                    2: ([Move.BOTTOM, Move.LEFT, Move.TOP, Move.RIGHT], (4 - j, 4 - i)),
+                    3: ([Move.LEFT, Move.TOP, Move.RIGHT, Move.BOTTOM], (j, 4 - i)),
+                    -4: ([Move.TOP, Move.LEFT, Move.BOTTOM, Move.RIGHT], (4 - j, i)),
+                    -1: ([Move.LEFT, Move.BOTTOM, Move.RIGHT, Move.TOP], (i, j)),
+                    -2: ([Move.BOTTOM, Move.RIGHT, Move.TOP, Move.LEFT], (j, 4 -i)),
+                    -3: ([Move.RIGHT, Move.TOP, Move.LEFT, Move.BOTTOM], (4 - i, 4 - j))
+                }
+
+                my_slide= simm[4][0].index(slide)
+                new_slide = simm[key][0][my_slide]
+                new_pos= simm[key][1]
+                return my_node, (new_pos, new_slide) 
+    return None
+
+def minimax(state, player_id, move, alfa, beta, max_depth, isMaximizing, winner):
+    if winner != -1: # terminal node
+        return 1 if winner == player_id else -1
+    if max_depth == 0:
+        return 0 #counts as a draw
+    valid_moves = get_all_valid_moves(state, move) # move is the player_id of the player currently performing the move, player_id is the id of MY player
+    if isMaximizing:
+        v = -float('inf')
+        for vm in valid_moves:
+            v = max([v, minimax(vm[1], player_id, 1 - move, alfa, beta, max_depth - 1, not isMaximizing, vm[2])])
+            alfa = max([alfa, v])
+            if beta <= alfa:
+                break
+    else:
+        v = float('inf')
+        for vm in valid_moves:
+            v = min([v, minimax(vm[1], player_id, 1 - move, alfa, beta, max_depth - 1, isMaximizing, vm[2])])
+            beta = min([beta, v])
+            if beta <= alfa:
+                break
+    return v
+
 class RandomPlayer(Player):
     
     def __init__(self, player_id) -> None:
@@ -68,7 +143,6 @@ class MyPlayer(Player):
     
     def make_move(self, game: 'Game') -> tuple[tuple[int, int], Move]:
         if not self.not_found:
-
             if len(MOVES) == 0: #First move of the game
                 best_move = max(self.current_state.children, key=lambda e: e.UCT())
                 from_pos, move = best_move.move[0], best_move.move[1]
@@ -82,7 +156,9 @@ class MyPlayer(Player):
             else:
                 self.current_state, best_move= simm_move(self.current_state, game.get_board()) # find the opponent last move in the tree
                 if best_move is not None:
-                    MOVES.append((best_move, self.current_state))
+       
+                    # from_pos, move= [best_move[0][1], best_move[0][0]], best_move[1]
+                    MOVES.append(((from_pos, move), self.current_state.state))
                     return best_move
                 else:
                     # print("Opponent move not found")
@@ -100,6 +176,8 @@ class MyPlayer(Player):
             if self.switch_turn is None:
             #     print(f"Switch strategy at turn {len(MOVES) + 1}")
                 self.switch_turn = len(MOVES) + 1
+                if self.switch_turn % 2 == 0:
+                    print("WHY!!!") 
                 # print(MOVES)
                 # now try to print the entire steps until now
     

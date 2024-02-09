@@ -9,13 +9,12 @@ import os
 
 TEST_MATCHES = 1000
 MODE = "test"
-      
 
 if __name__ == '__main__':
     # mc_tree, node_list = initialize_tree()
     cont_terminal = 0 
 
-    mc_tree = Tree(10)
+    mc_tree = Tree(20)
     node_list:list[Node] = []
     if os.path.exists('albero.pkl'):
         print("Loading trained agent...")
@@ -32,7 +31,7 @@ if __name__ == '__main__':
     
     if MODE == "train":
         len_node_before_expansion = len(node_list) 
-        expand_tree(mc_tree, node_list,200)
+        expand_tree(mc_tree, node_list,400)
         len_node_after_expansion = len(node_list)
         print(f"nodes after expansion: {len_node_after_expansion}")
 
