@@ -3,8 +3,14 @@ import random
 import numpy as np
 from game import Player, Move, Game
 
+def count_max_aligned(state, player_id):
+    count = 0
+    for i in range(5):
+        count = max(count, sum(state[i, :] == player_id))
+        count = max(count, sum(state[:, i] == player_id))
+    return count
 
-def get_all_valid_moves(game: Game, with_simmetries=False):
+def get_all_valid_moves(game: Game, player_id, with_simmetries=False):
     valid_moves = []
     moves= [Move.BOTTOM, Move.LEFT, Move.RIGHT, Move.TOP]
     random.shuffle(moves)
@@ -12,7 +18,7 @@ def get_all_valid_moves(game: Game, with_simmetries=False):
         for j in range(5):
             for m in moves:
                 g = deepcopy(game)
-                ok = g._Game__move((i, j), m, g.get_current_player())
+                ok = g._Game__move((i, j), m, player_id)
                 if ok :
                     board=g.get_board() 
                     free_cells= np.count_nonzero(board==-1)
@@ -23,7 +29,7 @@ def get_all_valid_moves(game: Game, with_simmetries=False):
         for i in range(1, 4):
             for m in moves:
                 g = deepcopy(game)
-                ok = g._Game__move((i, j), m, g.get_current_player())
+                ok = g._Game__move((i, j), m, player_id)
                 if ok :
                     board=g.get_board() 
                     free_cells= np.count_nonzero(board==-1)
@@ -119,10 +125,11 @@ class RandomPlayer(Player):
         return from_pos, move
 
 class MyPlayer(Player):
-    def __init__(self, max_depth=3, with_simmetries=False, against_human=False):
+    def __init__(self, player_id, max_depth=3, with_simmetries=False, against_human=False):
         self.max_depth = max_depth
         self.against_human = against_human
         self.with_simmetries = with_simmetries
+        self.player_id = player_id
 
     def make_move(self, game: Game) -> tuple[tuple[int, int], Move]:
         if self.against_human:
@@ -135,15 +142,14 @@ class MyPlayer(Player):
     
     def minimax(self, game:Game, depth, alpha, beta, isMaximizing):
         if depth == 0 or game.check_winner() != -1:
-            return self.evaluate(game), None
- 
-        valid_moves = get_all_valid_moves(game, self.with_simmetries) # move is the player_id of the player currently performing the move, player_id is the id of MY player
+            return self.evaluate(game, self.player_id), None 
         if isMaximizing:
             best_move = None
             v = -float('inf')
+            valid_moves = get_all_valid_moves(game, self.player_id, self.with_simmetries) # move is the player_id of the player currently performing the move, player_id is the id of MY player
             for vm in valid_moves:
                 next_game = deepcopy(game)
-                next_game._Game__move(vm[0][0], vm[0][1], next_game.get_current_player())
+                next_game._Game__move(vm[0][0], vm[0][1], self.player_id)
                 eval,_ = self.minimax(next_game, depth-1 , alpha, beta, False)
                 if eval > v:
                     v = eval
@@ -156,9 +162,10 @@ class MyPlayer(Player):
         else:
             best_move = None
             v = float('inf')
+            valid_moves = get_all_valid_moves(game, 1 - self.player_id, self.with_simmetries) # move is the player_id of the player currently performing the move, player_id is the id of MY player
             for vm in valid_moves:
                 next_game = deepcopy(game)
-                next_game._Game__move(vm[0][0], vm[0][1], next_game.get_current_player())
+                next_game._Game__move(vm[0][0], vm[0][1], 1 - self.player_id)
                 eval, _ = self.minimax(next_game, depth - 1, alpha, beta, True)
                 if eval < v:
                     v = eval
@@ -168,10 +175,13 @@ class MyPlayer(Player):
                     break
             return v, best_move 
     
-    def evaluate(self, game: Game) -> int:
+    def evaluate(self, game: Game, player_id) -> int:
         winner = game.check_winner()
-        if winner == game.get_current_player():
+        if winner == player_id:
             return 1
         if winner != -1:
             return -1
-        return 0
+        my_count = count_max_aligned(game.get_board(), player_id)
+        opp_count = count_max_aligned(game.get_board(), 1 - player_id)
+        return my_count - opp_count
+        # return 0
