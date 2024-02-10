@@ -184,5 +184,5 @@ class MyPlayer(Player):
             return -1
         my_count = count_max_aligned(game.get_board(), player_id)
         opp_count = count_max_aligned(game.get_board(), 1 - player_id)
-        return my_count - opp_count
+        return (my_count - opp_count) / 5
         # return 0
