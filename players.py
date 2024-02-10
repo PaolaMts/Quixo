@@ -8,6 +8,8 @@ def count_max_aligned(state, player_id):
     for i in range(5):
         count = max(count, sum(state[i, :] == player_id))
         count = max(count, sum(state[:, i] == player_id))
+    count = max(count, sum(state[x, x] == player_id for x in range(5))) # count on diagonal
+    count = max(count, sum(state[x, 4-x] == player_id for x in range(5))) # count on anti-diagonal
     return count
 
 def get_all_valid_moves(game: Game, player_id, with_simmetries=False):
@@ -158,7 +160,6 @@ class MyPlayer(Player):
                 if beta <= alpha:
                     break
             return v, best_move 
-        
         else:
             best_move = None
             v = float('inf')
